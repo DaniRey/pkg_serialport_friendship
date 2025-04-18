@@ -1,0 +1,28 @@
+{
+  "name": "pkg_serialport_friendship",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.cjs",
+  "keywords": [],
+  "dependencies": {
+    "modbus-serial": "^8.0.19"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@yao-pkg/pkg": "^5.16.1"
+  },
+  "bin": "index.cjs",
+  "pkg": {
+    "targets": [
+      "node22-win-x64",
+      "node22-linuxstatic-armv7"
+    ],
+    "assets": [
+      "node_modules/@serialport/bindings-cpp/**"
+    ],
+    "outputPath": "target/bin"
+  },
+  "scripts": {
+    "dist": "pkg . --no-bytecode --public-packages \"*\" --public --debug -C GZip"
+  }
+}
