@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 ask() {
@@ -33,127 +33,146 @@ ask() {
 	done
 }
 
-# EDIT THIS WITH YOUR VALUES
+pkg() {
+	echo "Executing command: npx pkg $@"
+	npx pkg $@
+}
+
 APP=$(node -p "require('./package.json').name")
 PKG_FOLDER="pkg"
 
 echo "Destination folder: $PKG_FOLDER"
 echo "App-name: $APP"
-read -p "Version: " VERSION
+
+VERSION=$(node -p "require('./package.json').version")
+echo "Version: $VERSION"
+
+NODE_MAJOR=$(node -v | grep -E -o '[0-9].' | head -n 1)
 
 echo "## Clear $PKG_FOLDER folder"
 rm -rf $PKG_FOLDER/*
 
-#if ask "Re-build $APP?"; then
-#  echo "## Building application"
-#  npm run build
-#fi
+# if --arch is passed as argument, use it as value for ARCH
+if [[ "$@" == *"--arch"* ]]; then
+	ARCH=$(echo "$@" | grep -oP '(?<=--arch=)[^ ]+')
+else
+	ARCH=$(uname -m)
+fi
 
-echo '###################################################'
-echo '## Choose architecture to build'
-echo '###################################################'
-echo ' '
-echo 'Your architecture is' $(arch)
-PS3="Architecture: >"
-options=(
-	"x64"
-	"armv7"
-	"armv6"
-	"x86"
-	"arm64"
-)
-echo ''
+echo "## Architecture: $ARCH"
 
-FIX=""
+if [ ! -z "$1" ]; then
+	echo "## Building application..."
+	echo ''
 
-select option in "${options[@]}"; do
-	case "$REPLY" in
-		1)
-			break
-			;;
-		2)
-			FIX="--public-packages=*"
-			break
-			;;
-		3)
-			FIX="--public-packages=*"
-			break
-			;;
-		4)
-			break
-			;;
-		5)
-			break
-			;;
-		*)
-			echo '####################'
-			echo '## Invalid option ##'
-			echo '####################'
-			exit
-	esac
-done
+	# skip build if args contains --skip-build
+	if [[ "$@" != *"--skip-build"* ]]; then
+		npm run build
+	else
+		echo "## Skipping build..."
+	fi
 
-ARCH=${options[$REPLY-1]}
+	# if --bundle is passed as argument, cd to `build` folder
+	if [[ "$@" == *"--bundle"* ]]; then
+		echo "## Building bundle..."
+		echo ''
+		npm run bundle
+		echo "## Changing directory to build folder"
+		cd build
+	fi
 
-PS3="Platform: >"
-options=(
-	"freebsd"
-	"linux"
-	"macos"
-	"alpine"
-	"win"
-)
-echo ''
-select option in "${options[@]}"; do
-	case "$REPLY" in
-		1)
-			break
-			;;
-		2)
-			break
-			;;
-		3)
-			break
-			;;
-		4)
-			break
-			;;
-		5)
-			break
-			;;
-		*)
-			echo '####################'
-			echo '## Invalid option ##'
-			echo '####################'
-			exit
-	esac
-done
+	if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+		pkg package.json -t node$NODE_MAJOR-linux-arm64 --out-path $PKG_FOLDER
+	elif [ "$ARCH" = "armv7" ]; then
+		pkg package.json -t node$NODE_MAJOR-linux-armv7 --out-path $PKG_FOLDER --public-packages=*
+	else
+		pkg package.json -t node$NODE_MAJOR-linux-x64,node$NODE_MAJOR-win-x64  --out-path $PKG_FOLDER
+	fi
 
-PLATFORM=${options[$REPLY-1]}
+else
 
-echo "## Creating application package in $PKG_FOLDER folder"
-pkg package.json -t node8-$ARCH-$PLATFORM --out-path $PKG_FOLDER $FIX
+	if ask "Re-build $APP?"; then
+		echo "## Building application"
+		npm run build
+	fi
 
-echo "## Check for .node files to include in executable folder"
-mapfile -t TO_INCLUDE < <(find ./node_modules/ -type f -name "*.node" | grep -v obj.target)
+	echo '###################################################'
+	echo '## Choose architecture to build'
+	echo '###################################################'
+	echo ' '
+	echo 'Your architecture is' $ARCH
+	PS3="Architecture: >"
+	options=(
+		"x64"
+		"armv7"
+		"armv6"
+		"x86"
+		"alpine"
+		"arm64"
+	)
+	echo ''
+	select option in "${options[@]}"; do
+		case "$REPLY" in
+			1)
+				echo "## Creating application package in $PKG_FOLDER folder"
+				pkg package.json -t node$NODE_MAJOR-linux-x64 --out-path $PKG_FOLDER
+				break
+				;;
+			2)
+				echo "## Creating application package in $PKG_FOLDER folder"
+				pkg package.json -t node$NODE_MAJOR-linux-armv7 --out-path $PKG_FOLDER --public-packages=*
+				break
+				;;
+			3)
+				echo "## Creating application package in $PKG_FOLDER folder"
+				pkg package.json -t node$NODE_MAJOR-linux-armv6 --out-path $PKG_FOLDER --public-packages=*
+				break
+				;;
+			4)
+				echo "## Creating application package in $PKG_FOLDER folder"
+				pkg package.json -t node$NODE_MAJOR-linux-x86 --out-path $PKG_FOLDER
+				break
+				;;
+			5)
+				echo "## Creating application package in $PKG_FOLDER folder"
+				pkg package.json -t node$NODE_MAJOR-alpine-x64 --out-path $PKG_FOLDER
+				break
+				;;
+			6)
+				echo "## Creating application package in $PKG_FOLDER folder"
+				pkg package.json -t node$NODE_MAJOR-linux-arm64 --out-path $PKG_FOLDER --public-packages=*
+				break
+				;;
+			*)
+				echo '####################'
+				echo '## Invalid option ##'
+				echo '####################'
+				exit
+		esac
+	done
+fi
 
-TOTAL_INCLUDE=${#TO_INCLUDE[@]}
-
-echo "## Found $TOTAL_INCLUDE files to include"
-
-i=0
-
-while [ "$i" -lt "$TOTAL_INCLUDE" ]
-do
-  IFS='/' path=(${TO_INCLUDE[$i]})
-  file=${path[-1]}
-  echo "## Copying $file to $PKG_FOLDER folder"
-  cp "${TO_INCLUDE[$i]}" "./$PKG_FOLDER"
-  let "i = $i + 1"
-done
-
-#echo "## Create folders and copy any other things not packaged here"
+echo "## Create folders needed"
 cd $PKG_FOLDER
-#mkdir store -p
-echo "## Create zip file $APP-v$VERSION"
-zip -r $APP-v$VERSION.zip *
+mkdir store -p
+
+if [ ! -z "$1" ]; then
+
+	if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+		echo "## Create zip file $APP-v$VERSION-linux-arm64"
+		zip -r $APP-v$VERSION-linux-arm64.zip store $APP
+	elif [ "$ARCH" = "armv7" ]; then
+		echo "## Create zip file $APP-v$VERSION-linux-armv7"
+		zip -r $APP-v$VERSION-linux-armv7.zip store $APP
+	else
+		echo "## Create zip file $APP-v$VERSION-win"
+		zip -r $APP-v$VERSION-win.zip store $APP-win.exe
+
+		echo "## Create zip file $APP-v$VERSION-linux"
+		zip -r $APP-v$VERSION-linux.zip store $APP-linux
+	fi
+
+else
+	echo "## Create zip file $APP-v$VERSION"
+	zip -r $APP-v$VERSION.zip store $APP
+fi
