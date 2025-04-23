@@ -13,16 +13,11 @@
   },
   "bin": "index.cjs",
   "pkg": {
-    "targets": [
-      "node22-win-x64",
-      "node22-linuxstatic-armv7"
-    ],
     "assets": [
-      "node_modules/@serialport/bindings-cpp/**"
-    ],
-    "outputPath": "target/bin"
+      "node_modules/@serialport/**"
+    ]
   },
   "scripts": {
-    "dist": "pkg . --no-bytecode --public-packages \"*\" --public --debug -C GZip"
+    "pkg": "chmod +x package.sh && ./package.sh"
   }
 }
