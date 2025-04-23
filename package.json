@@ -20,6 +20,6 @@
   "scripts": {
     "build": "mkdir -p dist && cp index.cjs dist/",
     "bundle": "",
-    "pkg": "chmod +x package.sh && ./package.sh"
+    "pkg": "chmod +x package.sh && ./package.sh --skip-build"
   }
 }
