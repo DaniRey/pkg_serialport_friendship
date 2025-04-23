@@ -22,26 +22,26 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
-      - name: Install and pre-build
-        run: |
-          npm ci
-          npm run build
+#      - name: Install and pre-build
+#        run: |
+#          npm ci
+#          npm run build
 
-      - uses: uraimo/run-on-arch-action@v2
-        name: Package
-        with:
-          arch: none # armv7
-          distro: none # bullseye
-
-          dockerRunArgs: |
-            --volume "${PWD}:/app"
-
-          base_image: '--platform=linux/arm/v7 arm32v7/node:20-bookworm'
-
-          # Rebuild .node modules for amv7
-          run: |
-            cd /app
-            npm rebuild
+#      - uses: uraimo/run-on-arch-action@v2
+#        name: Package
+#        with:
+#          arch: none # armv7
+#          distro: none # bullseye
+#
+#          dockerRunArgs: |
+#            --volume "${PWD}:/app"
+#
+#          base_image: '--platform=linux/arm/v7 arm32v7/node:20-bookworm'
+#
+#          # Rebuild .node modules for amv7
+#          run: |
+#            cd /app
+#            npm rebuild
 
       - name: Build for armv7
         run: |
