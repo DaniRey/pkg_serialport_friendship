@@ -73,13 +73,13 @@ if [ ! -z "$1" ]; then
 	fi
 
 	# if --bundle is passed as argument, cd to `build` folder
-	if [[ "$@" == *"--bundle"* ]]; then
-		echo "## Building bundle..."
-		echo ''
-		npm run bundle
-		echo "## Changing directory to build folder"
-		cd build
-	fi
+#	if [[ "$@" == *"--bundle"* ]]; then
+#		echo "## Building bundle..."
+#		echo ''
+#		npm run bundle
+#		echo "## Changing directory to build folder"
+#		cd build
+#	fi
 
 	if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
 		pkg package.json -t node$NODE_MAJOR-linux-arm64 --out-path $PKG_FOLDER
