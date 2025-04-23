@@ -18,6 +18,7 @@
     ]
   },
   "scripts": {
+    "build": "mkdir -p dist && cp index.cjs dist/",
     "pkg": "chmod +x package.sh && ./package.sh"
   }
 }
